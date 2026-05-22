@@ -1,0 +1,7 @@
+node_modules/
+.DS_Store
+*.log
+_old-prototype/
+docs/screenshots/
+docs/shoot.js
+docs/xss-check.js

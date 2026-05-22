@@ -1,0 +1,31 @@
+{
+  "name": "memro",
+  "version": "1.0.0",
+  "description": "Memro: a flashcard web app where you make your own sets, keep them private or public, share them by code and track what you have learned.",
+  "main": "server/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server/server.js",
+    "seed": "node server/seed.js",
+    "test": "node --test",
+    "xss-check": "node docs/xss-check.js"
+  },
+  "keywords": [
+    "flashcards",
+    "study",
+    "express",
+    "sqlite"
+  ],
+  "author": "Lucia Prockova (4239347)",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "quill": "^2.0.3"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^25.7.0"
+  }
+}
