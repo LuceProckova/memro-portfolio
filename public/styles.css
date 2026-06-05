@@ -1,0 +1,580 @@
+/* styles.css
+   all the styling, colours are variables at the top so dark mode just swaps
+   them instead of every rule, phone first layout, media query at the bottom
+   widens it for bigger screens */
+
+:root {
+  --bg: #f2f4f8;
+  --surface: #ffffff;
+  --text: #1d2430;
+  --grey-text: #69737f;
+  --line: #dde2ea;
+  --blue: #17457a;
+  --green: #217a4b;
+  --red: #a93b34;
+  --untouched: #d7dce4;
+  --radius: 10px;
+}
+
+body.dark {
+  --bg: #161a21;
+  --surface: #1f242d;
+  --text: #e8ecf2;
+  --grey-text: #98a2b0;
+  --line: #2e3641;
+  --blue: #6fa8e0;
+  --green: #4dbb84;
+  --red: #e0736a;
+  --untouched: #333c48;
+}
+
+* { box-sizing: border-box; }
+
+/* a class with display can beat the browsers hidden rule so this makes sure
+   hidden actually means hidden */
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* top bar */
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand { font-size: 1.4rem; font-weight: 700; color: var(--blue); }
+.topbar-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.who { color: var(--grey-text); font-size: 0.9rem; }
+
+main { max-width: 860px; margin: 0 auto; padding: 18px 16px 60px; }
+
+/* buttons */
+
+.main-btn, .ghost-btn, .green-btn, .red-btn {
+  font: inherit;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+  min-height: 42px;
+}
+
+.main-btn  { background: var(--blue);  color: #fff; }
+.green-btn { background: var(--green); color: #fff; }
+.red-btn   { background: var(--red);   color: #fff; }
+
+.ghost-btn {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--line);
+}
+
+.small { padding: 6px 12px; min-height: 34px; font-size: 0.85rem; }
+button:hover { filter: brightness(1.1); }
+
+/* ghost button when switched on, for the public sets toggle */
+.ghost-btn.on {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+}
+
+/* home */
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 18px 0 10px;
+}
+
+.row h1 { font-size: 1.5rem; margin: 0; }
+.row-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.search-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+
+.search-row input {
+  flex: 1 1 200px;
+  min-width: 0;
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.hint { color: var(--grey-text); font-size: 0.9rem; margin: 4px 0 12px; }
+
+.set-list { display: grid; grid-template-columns: 1fr; gap: 10px; }
+
+.set-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  cursor: pointer;
+}
+
+/* these are keyboard reachable so needs a visible focus ring */
+.set-card:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+.set-card h3 { margin: 0 0 4px; font-size: 1.05rem; }
+.set-card p  { margin: 0; color: var(--grey-text); font-size: 0.88rem; }
+
+.tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  color: var(--grey-text);
+  margin-left: 6px;
+}
+
+.tag.yours { color: var(--blue); border-color: var(--blue); }
+
+/* progress bar */
+
+/* green known, red unknown, leftover grey = not seen yet */
+.bar {
+  display: flex;
+  height: 12px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: var(--untouched);
+  margin: 6px 0 6px;
+}
+
+.bar-known   { background: var(--green); width: 0; }
+.bar-unknown { background: var(--red);   width: 0; }
+
+.bar-labels {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--grey-text);
+  margin-bottom: 18px;
+}
+
+/* the card */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 26px 20px;
+  min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.card:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+.card-question { margin: 0; font-size: 1.15rem; font-weight: 600; }
+
+.card-answer {
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: var(--blue);
+}
+
+.card-hint { margin: 18px 0 0; text-align: center; font-size: 0.8rem; color: var(--grey-text); }
+
+.answer-buttons { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 14px; }
+
+.finished {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 26px 20px;
+  text-align: center;
+}
+
+.finished h2 { margin-top: 0; color: var(--green); }
+
+/* pop up windows */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 20, 28, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 10;
+}
+
+.popup {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 22px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.popup.wide { max-width: 660px; }
+.popup.colours { max-width: 500px; }
+.popup h2 { margin: 0 0 14px; font-size: 1.2rem; }
+
+.popup label {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 0.88rem;
+  color: var(--grey-text);
+}
+
+.popup label input[type="text"],
+.popup label input[type="password"],
+.popup label input[type="email"] {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.popup label.checkbox { display: flex; gap: 8px; align-items: center; color: var(--text); }
+.popup label.checkbox input { margin: 0; }
+
+.popup-buttons { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 16px; }
+
+.popup-error {
+  /* uses whatever red is current instead of a fixed one so it still matches
+     dark mode / custom colours */
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  color: var(--red);
+  border: 1px solid var(--red);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-size: 0.88rem;
+  margin: 0 0 10px;
+}
+
+.code {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 5px;
+  /* letter spacing pushes centred text left a bit, indent fixes it back */
+  text-indent: 5px;
+  text-align: center;
+  color: var(--blue);
+  background: var(--bg);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin: 10px 0;
+}
+
+/* the colours popup */
+
+/* 3 across normally, drops to 2 on narrow phones so nothing looks half empty */
+.preset-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 12px 0 16px;
+}
+
+@media (min-width: 420px) {
+  .preset-row { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* each preset button shows the colours it would set */
+.preset {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.preset .swatches { display: flex; }
+
+.preset .swatch {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  margin-left: -4px;
+}
+
+.preset .swatch:first-child { margin-left: 0; }
+
+.colour-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+
+.colour-grid label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.colour-grid input[type="color"] {
+  width: 46px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  flex: none;
+}
+
+/* written content on a card, same rules for the study card + the list in the popup */
+
+/* a long word or url could push the whole page sideways on a phone otherwise
+   code blocks are allowed to be wide but scroll inside themselves instead */
+.rich, .ql-editor { overflow-wrap: break-word; }
+
+.rich pre,
+.ql-editor .ql-code-block-container {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.rich p { margin: 0 0 8px; }
+.rich p:last-child { margin-bottom: 0; }
+.rich ul, .rich ol { margin: 0 0 8px; padding-left: 22px; }
+.rich ul:last-child, .rich ol:last-child { margin-bottom: 0; }
+.rich li { margin-bottom: 3px; }
+.rich li ul, .rich li ol { margin: 3px 0 0; }
+.rich strong { font-weight: 700; }
+.rich em { font-style: italic; }
+.rich u { text-decoration: underline; }
+.rich s { text-decoration: line-through; }
+
+.rich h3 {
+  margin: 0 0 6px;
+  font-size: 1.05em;
+  font-weight: 700;
+  color: var(--blue);
+}
+
+.rich blockquote {
+  margin: 0 0 8px;
+  padding: 2px 0 2px 12px;
+  border-left: 3px solid var(--line);
+  color: var(--grey-text);
+}
+
+.rich code {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.92em;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+
+.rich a { color: var(--blue); }
+
+.rich-image {
+  display: block;
+  max-width: 100%;
+  max-height: 260px;
+  width: auto;
+  margin: 8px 0;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+
+/* the card editor, quill.snow.css does the actual layout, this just makes it
+   use the apps own colours so it follows dark mode / custom colours too */
+
+/* quill defaults to height 100% which collapsed the box and made editors
+   overlap, flex column + auto height fixes it */
+.editor {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.editor-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--grey-text);
+  margin-bottom: 5px;
+}
+
+.ql-toolbar.ql-snow {
+  border-color: var(--line);
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: var(--bg);
+}
+
+.ql-container.ql-snow {
+  height: auto;
+  border-color: var(--line);
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--surface);
+  font-family: inherit;
+}
+
+.ql-editor {
+  min-height: 74px;
+  max-height: 260px;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.ql-editor.ql-blank::before {
+  color: var(--grey-text);
+  font-style: normal;
+}
+
+/* quill buttons are svg so colour has to go on stroke/fill not just text colour */
+.ql-snow .ql-stroke { stroke: var(--text); }
+.ql-snow .ql-fill, .ql-snow .ql-stroke.ql-fill { fill: var(--text); }
+.ql-snow .ql-picker { color: var(--text); }
+
+.ql-snow button:hover .ql-stroke,
+.ql-snow button.ql-active .ql-stroke,
+.ql-snow .ql-picker-label:hover .ql-stroke,
+.ql-snow .ql-picker-label.ql-active .ql-stroke { stroke: var(--blue); }
+
+.ql-snow button:hover .ql-fill,
+.ql-snow button.ql-active .ql-fill,
+.ql-snow .ql-picker-label:hover .ql-fill { fill: var(--blue); }
+
+.ql-snow button:hover,
+.ql-snow button.ql-active,
+.ql-snow .ql-picker-label:hover,
+.ql-snow .ql-picker-label.ql-active,
+.ql-snow .ql-picker-item:hover,
+.ql-snow .ql-picker-item.ql-selected { color: var(--blue); }
+
+/* the little panel for typing a link address */
+.ql-snow .ql-tooltip {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--text);
+  box-shadow: 0 2px 10px rgba(15, 20, 28, 0.18);
+  z-index: 20;
+}
+
+.ql-snow .ql-tooltip input[type="text"] {
+  background: var(--bg);
+  border-color: var(--line);
+  color: var(--text);
+}
+
+.ql-snow .ql-tooltip a.ql-action,
+.ql-snow .ql-tooltip a.ql-remove,
+.ql-snow .ql-tooltip a { color: var(--blue); }
+
+.ql-snow .ql-picker-options {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+/* makes the editor look how it will actually look on the card */
+.ql-editor blockquote {
+  border-left: 3px solid var(--line);
+  color: var(--grey-text);
+}
+
+.ql-editor h3 { color: var(--blue); font-size: 1.05em; }
+.ql-editor img { max-height: 160px; border-radius: 8px; }
+.ql-editor .ql-code-block-container { background: var(--bg); color: var(--text); }
+
+/* card list inside the cards popup */
+
+.new-card {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.new-card-buttons { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+.card-list { display: grid; gap: 8px; }
+
+.card-row {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px 12px 42px;
+  font-size: 0.9rem;
+  background: var(--surface);
+}
+
+/* number down the left so its easier to keep place in a long list */
+.card-number {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--grey-text);
+}
+
+.card-row .q { font-weight: 600; }
+.card-row .a { color: var(--grey-text); margin-top: 4px; }
+.card-row .card-row-buttons { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+
+/* holds the delete button + the confirm pair once pressed */
+.confirm-holder { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+
+/* same row but while editing */
+.card-row.editing {
+  border-color: var(--blue);
+  padding-left: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+/* bigger screens */
+
+@media (min-width: 620px) {
+  main { padding: 24px 20px 80px; }
+  .row h1 { font-size: 1.8rem; }
+  .set-list { grid-template-columns: 1fr 1fr; }
+  .answer-buttons { grid-template-columns: 1fr 1fr; }
+  .card { min-height: 220px; padding: 32px 28px; }
+  .card-question { font-size: 1.3rem; }
+}

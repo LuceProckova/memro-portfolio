@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memro</title>
+  <!-- favicon drawn right here instead of a file, browser was asking for one -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2317457a'/%3E%3Ctext x='16' y='23' font-family='Arial' font-size='19' font-weight='bold' fill='white' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E">
+  <!-- quill editor, comes from node_modules not a cdn so it still works offline -->
+  <link rel="stylesheet" href="/vendor/quill/quill.snow.css">
+  <link rel="stylesheet" href="styles.css">
+  <!-- both deferred so they dont block the page, still run in order so quill loads before app.js needs it -->
+  <script src="/vendor/quill/quill.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+
+<!-- top bar, buttons on the right change based on login, app.js handles that -->
+<header class="topbar">
+  <div class="brand">Memro</div>
+  <div class="topbar-right">
+    <button type="button" id="theme-btn" class="ghost-btn" title="Light or dark">Dark</button>
+    <button type="button" id="colours-btn" class="ghost-btn" title="Pick your own colours">Colours</button>
+    <span id="who" class="who" hidden></span>
+    <button type="button" id="login-btn" class="ghost-btn">Log in</button>
+    <button type="button" id="register-btn" class="main-btn">Sign up</button>
+    <button type="button" id="logout-btn" class="ghost-btn" hidden>Log out</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- home: my sets and search -->
+  <section id="home-view">
+
+    <div class="row">
+      <h1 id="home-title">Your sets</h1>
+      <div class="row-buttons">
+        <button type="button" id="new-set-btn" class="main-btn">New set</button>
+        <button type="button" id="add-code-btn" class="ghost-btn">Add by code</button>
+      </div>
+    </div>
+
+    <div class="search-row">
+      <input type="search" id="search-input" placeholder="Search by title, description or who made it">
+      <button type="button" id="search-btn" class="main-btn">Search</button>
+      <!-- toggle, off = just my sets, on = my sets + everyones public ones -->
+      <button type="button" id="public-btn" class="ghost-btn" aria-pressed="false">Public sets</button>
+    </div>
+
+    <p id="home-hint" class="hint"></p>
+    <div id="set-list" class="set-list"></div>
+  </section>
+
+  <!-- study: one set at a time -->
+  <section id="study-view" hidden>
+
+    <button type="button" id="back-btn" class="ghost-btn small">Back to sets</button>
+
+    <div class="row">
+      <div>
+        <h1 id="study-title"></h1>
+        <p id="study-sub" class="hint"></p>
+      </div>
+      <div class="row-buttons">
+        <button type="button" id="edit-set-btn" class="ghost-btn" hidden>Edit set</button>
+        <button type="button" id="cards-btn" class="ghost-btn" hidden>Cards</button>
+        <button type="button" id="share-btn" class="ghost-btn">Share</button>
+        <button type="button" id="reset-btn" class="ghost-btn">Reset</button>
+      </div>
+    </div>
+
+    <!-- green known, red unknown, grey not seen. hidden from screen readers cos
+         the numbers below say the same thing already -->
+    <div class="bar" aria-hidden="true">
+      <div class="bar-known" id="bar-known"></div>
+      <div class="bar-unknown" id="bar-unknown"></div>
+    </div>
+    <div class="bar-labels" role="status">
+      <span><b id="count-known">0</b> learned</span>
+      <span><b id="count-unknown">0</b> to do</span>
+      <span><b id="count-left">0</b> not seen</span>
+    </div>
+
+    <!-- only shows if nobody is logged in, progress isnt on the server then -->
+    <p class="hint" id="local-note" hidden>
+      You are not logged in, so this progress is only kept in this browser.
+      Sign up and it follows your account instead.
+    </p>
+
+    <!-- if saving an answer fails this shows the error, no ugly alert box -->
+    <p class="popup-error" id="study-error" role="status" hidden></p>
+
+    <!-- role=button so screen readers know its pressable, not just readable -->
+    <article class="card" id="card" tabindex="0" role="button" aria-expanded="false">
+      <div class="card-question" id="card-question"></div>
+      <div class="card-answer" id="card-answer" hidden></div>
+      <p class="card-hint" id="card-hint">Click the card to see the answer</p>
+    </article>
+
+    <div class="answer-buttons" id="answer-buttons" hidden>
+      <button type="button" id="unknown-btn" class="red-btn">I don't know</button>
+      <button type="button" id="known-btn" class="green-btn">I know</button>
+    </div>
+
+    <!-- shows when theres nothing left, either finished or the set is empty -->
+    <div class="finished" id="finished" hidden>
+      <h2 id="finished-title">All done</h2>
+      <p id="finished-text">You have marked every card in this set as learned.</p>
+      <button type="button" id="finished-reset-btn" class="main-btn">Study it again</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- pop up windows -->
+
+<div class="overlay" id="overlay" hidden>
+
+  <!-- log in -->
+  <div class="popup" id="popup-login" role="dialog" aria-modal="true" aria-labelledby="login-title" hidden>
+    <h2 id="login-title">Log in</h2>
+    <label>Username <input type="text" id="login-username" autocomplete="username"></label>
+    <label>Password <input type="password" id="login-password" autocomplete="current-password"></label>
+    <p class="popup-error" id="login-error" role="status" hidden></p>
+    <div class="popup-buttons">
+      <button type="button" class="ghost-btn close-popup">Cancel</button>
+      <button type="button" class="main-btn" id="login-submit">Log in</button>
+    </div>
+  </div>
+
+  <!-- sign up -->
+  <div class="popup" id="popup-register" role="dialog" aria-modal="true" aria-labelledby="register-title" hidden>
+    <h2 id="register-title">Sign up</h2>
+    <label>Username <input type="text" id="register-username" autocomplete="username"></label>
+    <label>Password <input type="password" id="register-password" autocomplete="new-password"></label>
+    <label>Email, only used if you forget your password
+      <input type="email" id="register-email" autocomplete="email" placeholder="optional">
+    </label>
+    <p class="popup-error" id="register-error" role="status" hidden></p>
+    <div class="popup-buttons">
+      <button type="button" class="ghost-btn close-popup">Cancel</button>
+      <button type="button" class="main-btn" id="register-submit">Create account</button>
+    </div>
+  </div>
+
+  <!-- new set / edit set -->
+  <div class="popup" id="popup-set" role="dialog" aria-modal="true" aria-labelledby="popup-set-title" hidden>
+    <h2 id="popup-set-title">New set</h2>
+    <label>Title <input type="text" id="set-title"></label>
+    <label>Description <input type="text" id="set-description" placeholder="optional"></label>
+    <label class="checkbox">
+      <input type="checkbox" id="set-public"> Public, so other people can find it
+    </label>
+    <p class="popup-error" id="set-error" role="status" hidden></p>
+    <div class="popup-buttons">
+      <!-- delete button built by app.js since it needs to ask twice -->
+      <span id="set-delete" hidden></span>
+      <button type="button" class="ghost-btn close-popup">Cancel</button>
+      <button type="button" class="main-btn" id="set-submit">Save</button>
+    </div>
+  </div>
+
+  <!-- manage the cards inside a set -->
+  <div class="popup wide" id="popup-cards" role="dialog" aria-modal="true" aria-labelledby="cards-title" hidden>
+    <!-- set name is in the heading so its always clear which set is being edited -->
+    <h2 id="cards-title">Cards</h2>
+
+    <!-- editors + add button built by app.js, same editor gets reused for editing -->
+    <div class="new-card" id="new-card"></div>
+
+    <p class="popup-error" id="cards-error" role="status" hidden></p>
+    <div id="card-list" class="card-list"></div>
+    <div class="popup-buttons">
+      <button type="button" class="main-btn close-popup">Done</button>
+    </div>
+  </div>
+
+  <!-- share code -->
+  <div class="popup" id="popup-share" role="dialog" aria-modal="true" aria-labelledby="share-title" hidden>
+    <h2 id="share-title">Share this set</h2>
+    <p class="hint">Give somebody this code. They type it into "Add by code" and get their own copy.</p>
+    <div class="code" id="share-code"></div>
+    <p class="hint" id="share-private" hidden>
+      This set is private, so only the code works. Make it public if you want it to show up in search.
+    </p>
+    <div class="popup-buttons">
+      <button type="button" class="main-btn close-popup">Close</button>
+    </div>
+  </div>
+
+  <!-- colours -->
+  <div class="popup colours" id="popup-colours" role="dialog" aria-modal="true" aria-labelledby="colours-title" hidden>
+    <h2 id="colours-title">Your colours</h2>
+    <p class="hint">
+      Pick a set below or choose your own. The text and the borders are worked
+      out from the background, so it stays readable whatever you go for.
+    </p>
+
+    <div class="preset-row" id="preset-row"></div>
+
+    <div class="colour-grid">
+      <label>Buttons and headings <input type="color" id="colour-accent"></label>
+      <label>I know <input type="color" id="colour-known"></label>
+      <label>I don't know <input type="color" id="colour-unknown"></label>
+      <label>Background <input type="color" id="colour-background"></label>
+    </div>
+
+    <p class="hint" id="colours-note"></p>
+    <p class="popup-error" id="colours-error" role="status" hidden></p>
+
+    <div class="popup-buttons">
+      <button type="button" class="ghost-btn" id="colours-reset">Back to default</button>
+      <button type="button" class="main-btn close-popup">Done</button>
+    </div>
+  </div>
+
+  <!-- add by code -->
+  <div class="popup" id="popup-code" role="dialog" aria-modal="true" aria-labelledby="code-title" hidden>
+    <h2 id="code-title">Add a set by code</h2>
+    <label>Code <input type="text" id="code-input" placeholder="ABC123" maxlength="6"></label>
+    <p class="popup-error" id="code-error" role="status" hidden></p>
+    <div class="popup-buttons">
+      <button type="button" class="ghost-btn close-popup">Cancel</button>
+      <button type="button" class="main-btn" id="code-submit">Add it</button>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
