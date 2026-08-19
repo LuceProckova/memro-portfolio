@@ -6,7 +6,6 @@
   "type": "commonjs",
   "scripts": {
     "start": "node server/server.js",
-    "seed": "node server/seed.js",
     "test": "node --test",
     "xss-check": "node docs/xss-check.js"
   },
