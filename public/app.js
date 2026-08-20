@@ -617,6 +617,18 @@ function isLight(hex) {
   return (r * 299 + g * 587 + b * 114) / 1000 > 140;
 }
 
+// picked colours carry one background, so dark mode has to darken it itself
+// or a saved scheme just sits there overriding the .dark class forever
+function paint() {
+  if (!colours) {
+    applyColours(null);
+    return;
+  }
+  const dark = document.body.classList.contains('dark');
+  const background = mix(colours.background, dark ? '#000000' : '#ffffff', 0.8);
+  applyColours({ ...colours, background });
+}
+
 // set directly on body instead of the stylesheet
 function applyColours(picked) {
   const names = ['--blue', '--green', '--red', '--bg', '--surface', '--text',
@@ -673,7 +685,7 @@ function fillPickers(picked) {
 // logged in colours save to the account, logged out just this browser
 async function saveColours(picked) {
   colours = picked;
-  applyColours(picked);
+  paint();
 
   if (picked) {
     localStorage.setItem('memro-colours', JSON.stringify(picked));
@@ -773,7 +785,7 @@ function useAccountColours() {
   if (!me || !me.theme) return;
   try {
     colours = JSON.parse(me.theme);
-    applyColours(colours);
+    paint();
     localStorage.setItem('memro-colours', me.theme);
   } catch (error) {
     colours = null; // a broken value should not stop the page loading
@@ -1267,6 +1279,7 @@ $('theme-btn').addEventListener('click', () => {
   const dark = document.body.classList.contains('dark');
   $('theme-btn').textContent = dark ? 'Light' : 'Dark';
   localStorage.setItem('memro-theme', dark ? 'dark' : 'light');
+  paint();
 });
 
 $('colours-btn').addEventListener('click', () => {
@@ -1281,7 +1294,7 @@ $('colours-btn').addEventListener('click', () => {
 for (const id of ['colour-accent', 'colour-known', 'colour-unknown', 'colour-background']) {
   $(id).addEventListener('input', () => {
     colours = readPickers();
-    applyColours(colours);
+    paint();
   });
   $(id).addEventListener('change', () => saveColours(readPickers()));
 }
@@ -1445,6 +1458,26 @@ $('card').addEventListener('keydown', (event) => {
   }
 });
 
+// space flips the card, left/right grade it, from anywhere in the study screen
+document.addEventListener('keydown', (event) => {
+  if ($('study-view').hidden || !$('overlay').hidden) return;
+  const tag = event.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || event.target.isContentEditable) return;
+
+  if (event.key === ' ' && $('answer-buttons').hidden) {
+    event.preventDefault();
+    revealAnswer();
+  } else if (!$('answer-buttons').hidden) {
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      answerCard('unknown');
+    } else if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      answerCard('known');
+    }
+  }
+});
+
 $('known-btn').addEventListener('click', () => answerCard('known'));
 $('unknown-btn').addEventListener('click', () => answerCard('unknown'));
 
@@ -1495,7 +1528,7 @@ async function start() {
   if (saved) {
     try {
       colours = JSON.parse(saved);
-      applyColours(colours);
+      paint();
     } catch (error) {
       localStorage.removeItem('memro-colours');
     }
