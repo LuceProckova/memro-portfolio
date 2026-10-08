@@ -1,3 +1,6 @@
+// api.test.js
+// integration tests, starts the real server and calls it like the browser does
+
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
@@ -71,6 +74,20 @@ test('the password is never sent back to the browser', async () => {
 
   const me = await call('GET', '/api/me');
   assert.strictEqual(me.body.user.password_hash, undefined);
+});
+
+test('a short password is rejected', async () => {
+  const call = client();
+  const res = await call('POST', '/api/register', { username: 'shortpass', password: 'abc' });
+  assert.strictEqual(res.status, 400);
+});
+
+test('the same username cannot be taken twice', async () => {
+  const call = client();
+  const username = await newUser(call);
+
+  const again = await client()('POST', '/api/register', { username, password: 'password2' });
+  assert.strictEqual(again.status, 409);
 });
 
 test('logging in with the wrong password fails', async () => {
@@ -295,6 +312,19 @@ test('cards can be added, changed and deleted', async () => {
   assert.strictEqual(set.body.cards.length, 0);
 });
 
+test('a card needs both a question and an answer', async () => {
+  const call = client();
+  await newUser(call);
+  const made = await call('POST', '/api/sets', { title: 'Half cards' });
+
+  const noAnswer = await call('POST', `/api/sets/${made.body.set.id}/cards`, { question: 'Q only', answer: '' });
+  assert.strictEqual(noAnswer.status, 400);
+
+  // nothing should have been saved
+  const set = await call('GET', `/api/sets/${made.body.set.id}`);
+  assert.strictEqual(set.body.cards.length, 0);
+});
+
 test('somebody else cannot edit or delete a card in your set', async () => {
   const owner = client();
   await newUser(owner);
@@ -396,6 +426,27 @@ test('progress from studying logged out can be brought onto a new account', asyn
   assert.deepStrictEqual(theirs.body.progress, {
     total: 3, known: 1, unknown: 1, untouched: 1,
   });
+});
+
+test('two users studying the same set keep separate progress', async () => {
+  const owner = client();
+  await newUser(owner);
+  const made = await owner('POST', '/api/sets', { title: 'Same set', isPublic: true });
+  const setId = made.body.set.id;
+  const added = await owner('POST', `/api/sets/${setId}/cards`, { question: 'Q', answer: 'A' });
+
+  const other = client();
+  await newUser(other);
+
+  // owner knows it, other doesnt
+  await owner('POST', `/api/cards/${added.body.card.id}/answer`, { status: 'known' });
+  await other('POST', `/api/cards/${added.body.card.id}/answer`, { status: 'unknown' });
+
+  const mine = await owner('GET', `/api/sets/${setId}`);
+  const theirs = await other('GET', `/api/sets/${setId}`);
+  assert.strictEqual(mine.body.progress.known, 1);
+  assert.strictEqual(theirs.body.progress.known, 0);
+  assert.strictEqual(theirs.body.progress.unknown, 1);
 });
 
 test('reset clears the progress but keeps the cards', async () => {

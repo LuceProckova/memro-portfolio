@@ -1,3 +1,6 @@
+// server.js
+// the file you run, express server, every /api route + serves the public folder
+
 const express = require('express');
 const path = require('node:path');
 const fs = require('node:fs');

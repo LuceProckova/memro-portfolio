@@ -1,3 +1,6 @@
+// app.js
+// everything the browser does, pop ups, studying, talks to /api
+
 // shortcut for document.getElementById
 function $(id) {
   return document.getElementById(id);

@@ -6,8 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node server/server.js",
-    "test": "node --test",
-    "xss-check": "node docs/xss-check.js"
+    "test": "node --test"
   },
   "keywords": [
     "flashcards",
@@ -23,8 +22,5 @@
   "dependencies": {
     "express": "^4.21.2",
     "quill": "^2.0.3"
-  },
-  "devDependencies": {
-    "puppeteer-core": "^25.7.0"
   }
 }
