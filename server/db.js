@@ -1,5 +1,4 @@
-// db.js
-// all the database stuff, sqlite, one file on disk, normal sql
+// db.js, all the database stuff, sqlite file on disk, normal sql
 
 const { DatabaseSync } = require('node:sqlite');
 const crypto = require('node:crypto');
@@ -103,8 +102,9 @@ function createUser(username, password, email) {
   return getUserById(result.lastInsertRowid);
 }
 
+// capitals dont matter, Lucia and lucia are one account
 function getUserByName(username) {
-  return db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+  return db.prepare('SELECT * FROM users WHERE username = ? COLLATE NOCASE').get(username);
 }
 
 function getUserById(id) {
@@ -129,18 +129,27 @@ function createSession(userId) {
   return token;
 }
 
+const SESSION_DAYS = 30;
+
 function getUserByToken(token) {
   if (!token) return undefined;
-  const row = db.prepare('SELECT user_id FROM sessions WHERE token = ?').get(token);
-  return row ? getUserById(row.user_id) : undefined;
+  const row = db.prepare('SELECT user_id, created_at FROM sessions WHERE token = ?').get(token);
+  if (!row) return undefined;
+
+  // older than 30 days = logged out, checked every request not just on restart
+  if (Date.now() - Date.parse(row.created_at) > SESSION_DAYS * 24 * 60 * 60 * 1000) {
+    deleteSession(token);
+    return undefined;
+  }
+  return getUserById(row.user_id);
 }
 
 function deleteSession(token) {
   db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
 }
 
-// clears old sessions, doubles as expiry after 30 days
-function removeOldSessions(days = 30) {
+// clears old sessions out of the table on start
+function removeOldSessions(days = SESSION_DAYS) {
   const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
   return db.prepare('DELETE FROM sessions WHERE created_at < ?').run(cutoff).changes;
 }
@@ -183,10 +192,7 @@ function getSetByCode(code) {
   return row ? getSet(row.id) : undefined;
 }
 
-// the one query behind every set list in the app
-// userId = whose sets count as yours (null if logged out)
-// text = search box, includePublic = also show everyone elses public sets
-// own sets show first, a public one of mine doesnt show up twice
+// every set list in the app, null user = logged out, mine first, no doubles
 function findSets(userId, text, includePublic) {
   const like = `%${text || ''}%`;
   return db.prepare(
@@ -211,8 +217,7 @@ function deleteSet(setId) {
   db.prepare('DELETE FROM sets WHERE id = ?').run(setId);
 }
 
-// copying gives an editable version, doesnt touch the original
-// runs in a transaction
+// editable copy in one transaction, original untouched
 function copySet(setId, newOwnerId) {
   const original = getSet(setId);
   if (!original) return undefined;

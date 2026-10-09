@@ -1,5 +1,4 @@
-// server.js
-// the file you run, express server, every /api route + serves the public folder
+// server.js, the file you run, every /api route + the public folder
 
 const express = require('express');
 const path = require('node:path');
@@ -46,6 +45,11 @@ function tidyUploads() {
     // dont let this fail someones delete
     console.error('Could not tidy the uploads folder:', error.message);
   }
+}
+
+// trimmed text, or '' if it isnt text, stops .trim() crashing on a number
+function text(value) {
+  return typeof value === 'string' ? value.trim() : '';
 }
 
 // login helper
@@ -96,7 +100,7 @@ app.use(loadUser);
 app.post('/api/register', (req, res) => {
   const { username, password, email } = req.body ?? {};
 
-  const name = typeof username === 'string' ? username.trim() : '';
+  const name = text(username);
 
   if (name.length < 3) {
     return res.status(400).json({ error: 'Username needs at least 3 characters.' });
@@ -113,7 +117,7 @@ app.post('/api/register', (req, res) => {
   }
 
   // email is optional, kept if it looks real, dropped if it doesnt
-  const address = typeof email === 'string' ? email.trim() : '';
+  const address = text(email);
   const keep = address.length > 0 && address.length <= 120 && /^[^\s@]+@[^\s@]+$/.test(address)
     ? address
     : null;
@@ -126,10 +130,10 @@ app.post('/api/register', (req, res) => {
 
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body ?? {};
-  const row = db.getUserByName((username || '').trim());
+  const row = db.getUserByName(text(username));
 
   // same error either way
-  if (!row || !db.checkPassword(password || '', row.password_hash)) {
+  if (!row || typeof password !== 'string' || !db.checkPassword(password, row.password_hash)) {
     return res.status(401).json({ error: 'Wrong username or password.' });
   }
 
@@ -186,11 +190,12 @@ app.get('/api/sets/search', (req, res) => {
 });
 
 app.post('/api/sets', mustBeLoggedIn, (req, res) => {
-  const { title, description, isPublic } = req.body ?? {};
-  if (!title || !title.trim()) {
+  const { isPublic } = req.body ?? {};
+  const title = text(req.body?.title);
+  if (!title) {
     return res.status(400).json({ error: 'Give the set a title.' });
   }
-  res.status(201).json({ set: db.createSet(req.user.id, title.trim(), description, isPublic) });
+  res.status(201).json({ set: db.createSet(req.user.id, title, text(req.body.description), isPublic) });
 });
 
 app.get('/api/sets/:id', (req, res) => {
@@ -212,11 +217,12 @@ app.get('/api/sets/:id', (req, res) => {
 });
 
 app.put('/api/sets/:id', mustBeLoggedIn, mustOwnSet, (req, res) => {
-  const { title, description, isPublic } = req.body ?? {};
-  if (!title || !title.trim()) {
+  const { isPublic } = req.body ?? {};
+  const title = text(req.body?.title);
+  if (!title) {
     return res.status(400).json({ error: 'Give the set a title.' });
   }
-  res.json({ set: db.updateSet(req.set.id, title.trim(), description, isPublic) });
+  res.json({ set: db.updateSet(req.set.id, title, text(req.body.description), isPublic) });
 });
 
 app.delete('/api/sets/:id', mustBeLoggedIn, mustOwnSet, (req, res) => {
@@ -227,10 +233,10 @@ app.delete('/api/sets/:id', mustBeLoggedIn, mustOwnSet, (req, res) => {
 
 // add a set by its share code, gives an editable copy
 app.post('/api/sets/add-by-code', mustBeLoggedIn, (req, res) => {
-  const { code } = req.body ?? {};
+  const code = text(req.body?.code);
   if (!code) return res.status(400).json({ error: 'Type a code first.' });
 
-  const found = db.getSetByCode(code.trim());
+  const found = db.getSetByCode(code);
   if (!found) return res.status(404).json({ error: 'No set has that code.' });
   if (found.owner_id === req.user.id) {
     return res.status(400).json({ error: 'That set is already yours.' });
@@ -242,11 +248,12 @@ app.post('/api/sets/add-by-code', mustBeLoggedIn, (req, res) => {
 // cards
 
 app.post('/api/sets/:id/cards', mustBeLoggedIn, mustOwnSet, (req, res) => {
-  const { question, answer } = req.body ?? {};
-  if (!question || !question.trim() || !answer || !answer.trim()) {
+  const question = text(req.body?.question);
+  const answer = text(req.body?.answer);
+  if (!question || !answer) {
     return res.status(400).json({ error: 'A card needs both a question and an answer.' });
   }
-  res.status(201).json({ card: db.addCard(req.set.id, question.trim(), answer.trim()) });
+  res.status(201).json({ card: db.addCard(req.set.id, question, answer) });
 });
 
 app.put('/api/cards/:cardId', mustBeLoggedIn, (req, res) => {
@@ -258,12 +265,14 @@ app.put('/api/cards/:cardId', mustBeLoggedIn, (req, res) => {
     return res.status(403).json({ error: 'This card belongs to someone else.' });
   }
 
-  const { question, answer } = req.body ?? {};
+  // same check as adding, spaces only gets refused too
+  const question = text(req.body?.question);
+  const answer = text(req.body?.answer);
   if (!question || !answer) {
     return res.status(400).json({ error: 'A card needs both a question and an answer.' });
   }
 
-  const updated = db.updateCard(card.id, question.trim(), answer.trim());
+  const updated = db.updateCard(card.id, question, answer);
   tidyUploads(); // a picture may have been taken off the card
   res.json({ card: updated });
 });
@@ -377,6 +386,18 @@ app.post('/api/sets/:id/reset', mustBeLoggedIn, (req, res) => {
 
 // catch-all for /api, otherwise itd fall through to the html page
 app.use('/api', (req, res) => res.status(404).json({ error: 'Unknown endpoint.' }));
+
+// anything that throws answers in json, not the html page with the stack in it
+app.use((error, req, res, next) => {
+  if (error.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'That request was not valid JSON.' });
+  }
+  if (error.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'That is too big to send.' });
+  }
+  console.error(error);
+  res.status(500).json({ error: 'Something went wrong on the server.' });
+});
 
 function start(port = PORT) {
   db.createTables();

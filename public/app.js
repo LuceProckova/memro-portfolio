@@ -1,12 +1,11 @@
-// app.js
-// everything the browser does, pop ups, studying, talks to /api
+// app.js, everything the browser does, pop ups, studying, calls /api
 
 // shortcut for document.getElementById
 function $(id) {
   return document.getElementById(id);
 }
 
-// counts go through here.
+// 1 card vs 2 cards
 function count(number, word) {
   return `${number} ${word}${number === 1 ? '' : 's'}`;
 }
@@ -99,14 +98,14 @@ function countProgress(cards) {
 
 // writing cards
 
-// Pictures 
+// pictures, only uploads or http links
 function safeImageUrl(url) {
   if (url.startsWith('/uploads/')) return url;
   if (/^https?:\/\//i.test(url)) return url;
   return '';
 }
 
-// Links 
+// links, only http, mailto or uploads
 function safeLinkUrl(url) {
   if (/^https?:\/\//i.test(url)) return url;
   if (/^mailto:/i.test(url)) return url;
@@ -187,12 +186,12 @@ function renderInline(text, into) {
   }
 }
 
-// Turns whole card into headings, quotes, lists, paragraphs and pictures.
+// whole card into headings, quotes, lists, paragraphs, pictures
 function renderRich(text, into) {
   into.innerHTML = '';
   into.classList.add('rich');
 
-  // Lists can sit inside lists
+  // lists inside lists
   let stack = [];
   let paragraph = null;
   let quote = null;
@@ -260,13 +259,13 @@ function renderRich(text, into) {
       continue;
     }
 
-    // Anything that is not a point ends the lists
+    // anything not a point ends the lists
     stack = [];
 
     const heading = /^#{1,3}\s+(.*)$/.exec(line);
     if (heading) {
       closeAll();
-      // Only one size heading
+      // one heading size only
       const title = document.createElement('h3');
       renderInline(heading[1], title);
       into.appendChild(title);
@@ -324,7 +323,7 @@ function editorToText(root) {
   const isList = (node) => node.nodeType === Node.ELEMENT_NODE
     && ['ul', 'ol'].includes(node.tagName.toLowerCase());
 
-  // Everything that sits inside a line
+  // everything inside one line
   function inline(node) {
     if (node.nodeType === Node.TEXT_NODE) return node.nodeValue;
     if (node.nodeType !== Node.ELEMENT_NODE) return '';
@@ -358,7 +357,7 @@ function editorToText(root) {
     pending = '';
   };
 
-  // Lists can hold lists
+  // lists inside lists
   function listBlock(node, baseDepth) {
     const listIsNumbered = node.tagName.toLowerCase() === 'ol';
     const counters = [];
@@ -455,8 +454,7 @@ function editorToText(root) {
     .trim();
 }
 
-// used for question + answer boxes, editor is Quill (library, not mine)
-// tried writing my own first but it was 200 lines of pain so used a library instead
+// question + answer boxes, quill library, my own version was 200 lines of pain
 function makeEditor(label, value, onError, onSave) {
   const wrap = document.createElement('div');
   wrap.className = 'editor';
@@ -620,8 +618,7 @@ function isLight(hex) {
   return (r * 299 + g * 587 + b * 114) / 1000 > 140;
 }
 
-// picked colours carry one background, so dark mode has to darken it itself
-// or a saved scheme just sits there overriding the .dark class forever
+// dark mode darkens the picked background itself, else it overrides .dark forever
 function paint() {
   if (!colours) {
     applyColours(null);
@@ -919,39 +916,12 @@ function showHomeFresh() {
 
 // studying
 
-// picks the next card, roughly every 3rd is a new one the rest are repeats
-// "i know" cards are dropped for good
+// order lives in order.js, i know cards never go back in a pile
 function pickNextCard() {
-  const canShowNew = newCards.length > 0;
-  const canRepeat = retryCards.length > 0;
-
-  if (canShowNew && (!canRepeat || sinceNewCard >= 2)) {
-    sinceNewCard = 0;
-    return newCards.shift();
-  }
-
-  if (canRepeat) {
-    // never give back the card already on screen
-    const others = currentCard
-      ? retryCards.filter((card) => card.id !== currentCard.id)
-      : retryCards;
-
-    // else show a new one instead
-    if (others.length === 0 && canShowNew) {
-      sinceNewCard = 0;
-      return newCards.shift();
-    }
-
-    // fallback for when theres genuinely nothing else to show
-    const pool = others.length ? others : retryCards;
-    const chosen = pool[Math.floor(Math.random() * pool.length)];
-
-    sinceNewCard++;
-    retryCards.splice(retryCards.indexOf(chosen), 1);
-    return chosen;
-  }
-
-  return null; // nothing left, the set is finished
+  const state = { newCards, retryCards, sinceNew: sinceNewCard, current: currentCard };
+  const next = pickNext(state);
+  sinceNewCard = state.sinceNew;
+  return next;
 }
 
 function drawProgress(progress) {

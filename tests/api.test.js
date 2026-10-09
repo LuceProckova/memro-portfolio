@@ -1,5 +1,4 @@
-// api.test.js
-// integration tests, starts the real server and calls it like the browser does
+// api.test.js, real server on a free port, called like the browser does
 
 const test = require('node:test');
 const assert = require('node:assert');
@@ -460,4 +459,65 @@ test('reset clears the progress but keeps the cards', async () => {
   const res = await call('POST', `/api/sets/${setId}/reset`);
 
   assert.deepStrictEqual(res.body.progress, { total: 1, known: 0, unknown: 0, untouched: 1 });
+});
+
+// bad input
+
+test('a title that is not text gets a json error, not a crash', async () => {
+  const call = client();
+  await newUser(call);
+
+  const res = await call('POST', '/api/sets', { title: 5 });
+  assert.strictEqual(res.status, 400);
+  assert.strictEqual(res.body.error, 'Give the set a title.');
+});
+
+test('broken json gets a json error back', async () => {
+  const res = await fetch(base + '/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{bad',
+  });
+  assert.strictEqual(res.status, 400);
+  assert.strictEqual((await res.json()).error, 'That request was not valid JSON.');
+});
+
+test('a card cannot be edited down to blank', async () => {
+  const call = client();
+  await newUser(call);
+  const made = await call('POST', '/api/sets', { title: 'No blanks' });
+  const added = await call('POST', `/api/sets/${made.body.set.id}/cards`, { question: 'Q', answer: 'A' });
+
+  const blank = await call('PUT', `/api/cards/${added.body.card.id}`, { question: '   ', answer: '   ' });
+  assert.strictEqual(blank.status, 400);
+
+  // card still the same
+  const set = await call('GET', `/api/sets/${made.body.set.id}`);
+  assert.strictEqual(set.body.cards[0].question, 'Q');
+});
+
+test('capitals in a username do not make a second account', async () => {
+  const first = await client()('POST', '/api/register', { username: 'Casey', password: 'password1' });
+  assert.strictEqual(first.status, 201);
+
+  const again = await client()('POST', '/api/register', { username: 'casey', password: 'password1' });
+  assert.strictEqual(again.status, 409);
+
+  const login = await client()('POST', '/api/login', { username: 'CASEY', password: 'password1' });
+  assert.strictEqual(login.status, 200);
+});
+
+test('a login older than 30 days stops working', async () => {
+  const call = client();
+  const username = await newUser(call);
+
+  // same in-memory database the server uses, ages this users login
+  const { db } = require('../server/db');
+  const old = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000).toISOString();
+  db.prepare(
+    'UPDATE sessions SET created_at = ? WHERE user_id = (SELECT id FROM users WHERE username = ?)'
+  ).run(old, username);
+
+  const me = await call('GET', '/api/me');
+  assert.strictEqual(me.body.user, null);
 });

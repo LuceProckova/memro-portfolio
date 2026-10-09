@@ -20,7 +20,8 @@ Internationale Hochschule.
 
 Known cards drop out and do not come back in that sitting. Cards marked
 "I don't know" go back in a pile and come back at a random point. About every
-third card is a new one. The code is `pickNextCard()` in `public/app.js`.
+third card is a new one. The code is `pickNext()` in `public/order.js`, kept in its
+own file so it can be unit tested.
 
 ## Installation
 
@@ -107,9 +108,12 @@ If you downloaded the ZIP, copy `data/memro.db` from a fresh download instead.
 npm test
 ```
 
-Runs 24 integration tests with the test runner built into Node. Each test starts
-the real server on a free port and calls it with `fetch`, like the browser does.
-They use an in-memory database, so they never touch `data/memro.db`.
+Runs 34 tests with the test runner built into Node.
+
+- **29 integration tests** in `tests/api.test.js`. Each one starts the real server
+  on a free port and calls it with `fetch`, like the browser does. They use an
+  in-memory database, so they never touch `data/memro.db`.
+- **5 unit tests** in `tests/order.test.js` for the card order, no server needed.
 
 What they cover:
 
@@ -121,6 +125,10 @@ What they cover:
   people not being able to touch your cards
 - **Progress**: the three counts, reset, two users keeping separate progress,
   bringing logged-out progress onto a new account
+- **Bad input**: wrong types and broken JSON get a proper error, blank card edits
+  are refused, capitals in usernames, logins running out after 30 days
+- **Card order**: new cards in order, every third card new, never the same card
+  twice in a row, the set finishing
 
 ## Folder layout
 
@@ -130,7 +138,9 @@ server/db.js         every line of SQL in the project
 public/index.html    the whole page, all six pop ups
 public/styles.css    the styling, phone first, dark mode
 public/app.js        everything the browser does
+public/order.js      which card comes next
 tests/api.test.js    the integration tests
+tests/order.test.js  the unit tests for the card order
 data/memro.db        the database, seeded with the demo account
 data/uploads/        pictures added to cards, made on first run
 ```
@@ -165,7 +175,7 @@ deleting a set deletes its cards and their progress too.
 Each password gets a random 16 byte salt and is hashed with scrypt, stored as
 `salt:hash`. The real password is never stored. Logging in compares with
 `timingSafeEqual`, and the error is the same whether the username or the
-password was wrong.
+password was wrong. Usernames ignore capitals, and a login lasts 30 days.
 
 ## API routes
 

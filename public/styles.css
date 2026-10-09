@@ -1,7 +1,4 @@
-/* styles.css
-   all the styling, colours are variables at the top so dark mode just swaps
-   them instead of every rule, phone first layout, media query at the bottom
-   widens it for bigger screens */
+/* styles.css, colours are variables so dark mode just swaps them, phone first */
 
 :root {
   --bg: #f2f4f8;
@@ -30,8 +27,7 @@ body.dark {
 
 * { box-sizing: border-box; }
 
-/* a class with display can beat the browsers hidden rule so this makes sure
-   hidden actually means hidden */
+/* a class with display beats hidden, this makes hidden win */
 [hidden] { display: none !important; }
 
 body {
@@ -269,8 +265,7 @@ button:hover { filter: brightness(1.1); }
 .popup-buttons { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 16px; }
 
 .popup-error {
-  /* uses whatever red is current instead of a fixed one so it still matches
-     dark mode / custom colours */
+  /* current red not a fixed one, so dark mode + custom colours match */
   background: color-mix(in srgb, var(--red) 12%, transparent);
   color: var(--red);
   border: 1px solid var(--red);
@@ -361,8 +356,7 @@ button:hover { filter: brightness(1.1); }
 
 /* written content on a card, same rules for the study card + the list in the popup */
 
-/* a long word or url could push the whole page sideways on a phone otherwise
-   code blocks are allowed to be wide but scroll inside themselves instead */
+/* long words wrap, code blocks scroll inside instead of pushing the page */
 .rich, .ql-editor { overflow-wrap: break-word; }
 
 .rich pre,
@@ -417,11 +411,9 @@ button:hover { filter: brightness(1.1); }
   border: 1px solid var(--line);
 }
 
-/* the card editor, quill.snow.css does the actual layout, this just makes it
-   use the apps own colours so it follows dark mode / custom colours too */
+/* card editor, quill does layout, this gives it the app colours */
 
-/* quill defaults to height 100% which collapsed the box and made editors
-   overlap, flex column + auto height fixes it */
+/* quill height 100% made editors overlap, flex column fixes it */
 .editor {
   display: flex;
   flex-direction: column;
